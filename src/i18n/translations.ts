@@ -149,6 +149,7 @@ export interface TranslationBundle {
     analyzingStep1: string;
     analyzingStep2: string;
     analysisErrorTitle: string;
+    analysisUnavailableError: string;
   };
   result: {
     heading: string;
@@ -399,6 +400,7 @@ export const TRANSLATIONS: Record<Language, TranslationBundle> = {
       analyzingStep1: 'Reviewing visible leaf patterns…',
       analyzingStep2: 'Preparing a possible-disease result…',
       analysisErrorTitle: 'Could not complete screening',
+      analysisUnavailableError: 'Image analysis is temporarily unavailable. Please try again.',
     },
     result: {
       heading: 'Possible disease prediction',
@@ -647,6 +649,7 @@ export const TRANSLATIONS: Record<Language, TranslationBundle> = {
       analyzingStep1: 'ఆకుపై కనిపిస్తున్న లక్షణాలను పరిశీలిస్తున్నాము…',
       analyzingStep2: 'సంభావ్య తెగులు ఫలితాన్ని సిద్ధం చేస్తున్నాము…',
       analysisErrorTitle: 'స్క్రీనింగ్ పూర్తి చేయలేకపోయాము',
+      analysisUnavailableError: 'చిత్రం విశ్లేషణ తాత్కాలికంగా అందుబాటులో లేదు. దయచేసి మళ్లీ ప్రయత్నించండి.',
     },
     result: {
       heading: 'సంభావ్య తెగులు అంచనా',
@@ -895,6 +898,7 @@ export const TRANSLATIONS: Record<Language, TranslationBundle> = {
       analyzingStep1: 'पत्ते पर दिख रहे पैटर्न की जांच हो रही है…',
       analyzingStep2: 'संभावित रोग परिणाम तैयार किया जा रहा है…',
       analysisErrorTitle: 'जांच पूरी नहीं हो सकी',
+      analysisUnavailableError: 'छवि विश्लेषण अस्थायी रूप से उपलब्ध नहीं है। कृपया पुनः प्रयास करें।',
     },
     result: {
       heading: 'संभावित रोग अनुमान',

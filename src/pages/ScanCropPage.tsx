@@ -28,6 +28,7 @@ import {
   ScanAnalysisResult,
   VisibleSymptom,
 } from '../types/agritech';
+import { getAnalyzeEndpoint, getDetectCropEndpoint } from '../utils/apiEndpoints';
 import { assessLeafPhotoQuality, PhotoQualityAssessment } from '../utils/imageQuality';
 import { createCompactThumbnail, saveCropRequest } from '../utils/storage';
 
@@ -210,6 +211,20 @@ export function ScanCropPage({
     if (cameraInputRef.current) cameraInputRef.current.value = '';
   };
 
+  const prepareUploadPayload = async (): Promise<{ mimeType: string; base64: string }> => {
+    const rawBase64 = imageDataUrl.includes(',') ? imageDataUrl.split(',')[1] : imageDataUrl;
+    const rawMime = imageMimeType || 'image/jpeg';
+    // Keep JSON body well under Netlify Functions' 6 MB synchronous payload limit.
+    if (rawBase64.length <= 2_400_000) {
+      return { mimeType: rawMime, base64: rawBase64 };
+    }
+    const compactedDataUrl = await createCompactThumbnail(imageDataUrl, 1400);
+    const compactedBase64 = compactedDataUrl.includes(',')
+      ? compactedDataUrl.split(',')[1]
+      : compactedDataUrl;
+    return { mimeType: 'image/jpeg', base64: compactedBase64 };
+  };
+
   const handleDetectCrop = async () => {
     if (!imageDataUrl || isDetectingCrop) return;
     const requestLanguage = language;
@@ -223,14 +238,14 @@ export function ScanCropPage({
     const timeoutId = window.setTimeout(() => controller.abort(), 30000);
 
     try {
-      const base64Part = imageDataUrl.includes(',') ? imageDataUrl.split(',')[1] : imageDataUrl;
-      const response = await fetch('/api/detect-crop', {
+      const uploadPayload = await prepareUploadPayload();
+      const response = await fetch(getDetectCropEndpoint(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
         body: JSON.stringify({
-          mimeType: imageMimeType || 'image/jpeg',
-          imageBase64: base64Part,
+          mimeType: uploadPayload.mimeType,
+          imageBase64: uploadPayload.base64,
           language: requestLanguage,
         }),
       });
@@ -286,16 +301,16 @@ export function ScanCropPage({
     const timeoutId = window.setTimeout(() => controller.abort(), 45000);
 
     try {
-      const base64Part = imageDataUrl.includes(',') ? imageDataUrl.split(',')[1] : imageDataUrl;
+      const uploadPayload = await prepareUploadPayload();
 
-      const response = await fetch('/api/analyze', {
+      const response = await fetch(getAnalyzeEndpoint(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
         body: JSON.stringify({
           crop: selectedCrop,
-          mimeType: imageMimeType || 'image/jpeg',
-          imageBase64: base64Part,
+          mimeType: uploadPayload.mimeType,
+          imageBase64: uploadPayload.base64,
           leafAge,
           visibleSymptom,
           notes: notes.trim(),
@@ -314,15 +329,15 @@ export function ScanCropPage({
       }
 
       if (!response.ok) {
-        throw new Error(
-          typeof payload?.message === 'string' && payload.message
+        const serverErrorMessage =
+          response.status === 400 && typeof payload?.message === 'string' && payload.message
             ? payload.message
-            : t.scan.analysisErrorTitle
-        );
+            : t.scan.analysisUnavailableError;
+        throw new Error(serverErrorMessage);
       }
 
       if (!payload || typeof payload.possibleDisease !== 'string') {
-        throw new Error(t.scan.analysisErrorTitle);
+        throw new Error(t.scan.analysisUnavailableError);
       }
 
       const compactThumbnail = await createCompactThumbnail(imageDataUrl, 720);
@@ -354,12 +369,14 @@ export function ScanCropPage({
       onAnalysisComplete(draftScan);
     } catch (err: unknown) {
       if (err instanceof DOMException && err.name === 'AbortError') {
-        setAnalysisError(t.scan.analysisErrorTitle);
+        setAnalysisError(t.scan.analysisUnavailableError);
+      } else if (err instanceof TypeError) {
+        setAnalysisError(t.scan.analysisUnavailableError);
       } else {
         const message =
           err instanceof Error && err.message
             ? err.message
-            : t.scan.analysisErrorTitle;
+            : t.scan.analysisUnavailableError;
         setAnalysisError(message);
       }
     } finally {

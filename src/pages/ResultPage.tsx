@@ -24,6 +24,7 @@ import {
   SavedScan,
   TranslatedGuidanceFields,
 } from '../types/agritech';
+import { getTranslateEndpoint } from '../utils/apiEndpoints';
 import { downloadFarmerSummaryImage } from '../utils/reportExport';
 import { validateScanConsistency } from '../utils/resultValidator';
 import { formatLocalizedDate } from '../utils/storage';
@@ -88,7 +89,7 @@ export function ResultPage({
       setTranslationError(false);
 
       try {
-        const res = await fetch('/api/translate', {
+        const res = await fetch(getTranslateEndpoint(), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           signal: controller.signal,
