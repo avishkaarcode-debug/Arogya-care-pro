@@ -61,3 +61,5 @@ The app does not claim to diagnose every crop or every plant disease. Unsupporte
 ```bash
 npm install
 npm run dev
+
+<!-- Netlify redeploy -->
